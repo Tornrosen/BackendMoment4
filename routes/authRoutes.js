@@ -2,6 +2,13 @@
 
 const express = require("express");
 const router = express.Router();
+require("dotenv").config();
+const bcrypt = require("bcrypt");
+
+const sqlite3 = require("sqlite3").verbose();
+
+const db = new sqlite3.Database(process.env.DATABASE);
+
 
 //Registrera användare
 router.post("/register", async (req, res) => {
@@ -11,8 +18,18 @@ router.post("/register", async (req, res) => {
         if(username.length>5||email.length>5||password.length){
             return res.status(400).json({error: "Fyll i alla uppgifter med minst fem tecken!"})
         }
+        //Hasha lösenord
+        const hashedPassword = await bcrypt.hash(req.body.password, 10)
         //Om korrekt, spara användare
-        res.status(201).json ({message: "Användare skapad."})
+        const sql = "INSERT INTO users(username, email, password) VALUES (?, ?, ?);";
+        db.run(sql, [username, email, hashedPassword], (error) => {
+            if (error) {
+                res.status(400).json({message: "Fel när användare skulle skapas."})
+            } else {
+                res.status(201).json ({message: "Användare skapad."})
+            }
+
+        });
     }catch (error){
         res.status(500).json({error: "Serverfel"});
     }
