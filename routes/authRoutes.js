@@ -44,11 +44,21 @@ router.post("/login", async (req, res) => {
             return res.status(400).json({error: "Fyll i användarnamn och lösenord!"})
         }
         //Kolla att inloggningsuppgifterna stämmer
-        if(username==="Ankan"&&password==="password") {
-            res.status(200).json({message: "Loggar in användare..."})
+       const sql = "SELECT * FROM users WHERE username =?"
+       db.get (sql, [username], async (error, row) => {
+        if(error){
+            res.status(400).json ({message: "Fel vid autentisering."})
+        } else if(!row) {
+            res.status(401).json({message: "Felaktigt användarnamn eller lösenord."})
         } else {
-            res.status(401).json({error: "Ange korrekt lösenord och användarnamn."})
+            const passwordMatch = await bcrypt.compare(password, row.password);
+            if(!passwordMatch) {
+                res.status(401).json({message: "Felaktigt användarnamn eller lösenord."})
+            } else {
+                res.status(200).json({message: "Korrekta inloggningsuppgifter."})
+            }
         }
+       })
 
     } catch (error){
         res.status(500).json({error: "Serverfel"});
