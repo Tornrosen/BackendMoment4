@@ -2,6 +2,7 @@
 
 const express = require("express");
 const router = express.Router();
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 
@@ -15,7 +16,7 @@ router.post("/register", async (req, res) => {
     try {
         const { username, email, password } = req.body;
         //Validera input
-        if(username.length>5||email.length>5||password.length){
+        if(username.length<5||email.length<5||password.length<5){
             return res.status(400).json({error: "Fyll i alla uppgifter med minst fem tecken!"})
         }
         //Hasha lösenord
@@ -40,7 +41,7 @@ router.post("/login", async (req, res) => {
     try { 
         const { username, password } = req.body;
         //Validera input
-        if(username.length>5||password.length){
+        if(username.length<5||password.length<5){
             return res.status(400).json({error: "Fyll i användarnamn och lösenord!"})
         }
         //Kolla att inloggningsuppgifterna stämmer
@@ -55,7 +56,14 @@ router.post("/login", async (req, res) => {
             if(!passwordMatch) {
                 res.status(401).json({message: "Felaktigt användarnamn eller lösenord."})
             } else {
-                res.status(200).json({message: "Korrekta inloggningsuppgifter."})
+                //skapa JWT
+                const payload = {username: username};
+                const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '1h'});
+                const response = {
+                    message: "Användare inloggad!",
+                    token: token
+                }
+                res.status(200).json({response})
             }
         }
        })
